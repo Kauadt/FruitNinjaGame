@@ -1,6 +1,7 @@
 #include "Game.hpp"
+#include "Entity/AimEntity.hpp"
 #include <iostream>
-
+#include <algorithm>
 #include <random>
 
 static float randomFloat(float min, float max)
@@ -12,8 +13,14 @@ static float randomFloat(float min, float max)
 }
 
 Game::Game()
-    : window(sf::VideoMode(1000, 600), "Game", sf::Style::Close | sf::Style::Titlebar)
+    : window(sf::VideoMode(900, 550), "Game", sf::Style::Close | sf::Style::Titlebar)
 {
+    window.setFramerateLimit(60);
+
+    spawnTimer = 0.f;
+    nextSpawnDelay = 0.5f; // Delay inicial curto
+
+    // Inicializa com algumas entidades ou deixe vazio para o timer preencher
     for (int i = 0; i < MAX_ENTITIES; i++)
         spawnEntity();
 }
@@ -31,20 +38,17 @@ void Game::run()
 void Game::processEvents()
 {
     sf::Event event;
-
     while (window.pollEvent(event))
     {
         if (event.type == sf::Event::Closed)
-        {
             window.close();
-        }
 
         if (event.type == sf::Event::MouseButtonPressed &&
             event.mouseButton.button == sf::Mouse::Left)
         {
-            sf::Vector2f clickPos(event.mouseButton.x, event.mouseButton.y);
+            sf::Vector2f clickPos((float)event.mouseButton.x, (float)event.mouseButton.y);
 
-            // remove o item clicado
+            // Remove se clicar
             entities.erase(
                 std::remove_if(entities.begin(), entities.end(),
                                [&](const std::unique_ptr<Entity> &e)
@@ -61,34 +65,53 @@ void Game::update()
     static sf::Clock clock;
     float dt = clock.restart().asSeconds();
 
+    // 1. Atualiza Posição
     for (auto &e : entities)
     {
         e->update(dt);
     }
 
-    while ((int)entities.size() < MAX_ENTITIES)
-        spawnEntity();
+    // 2. Remove entidades mortas (que completaram o trajeto)
+    entities.erase(
+        std::remove_if(entities.begin(), entities.end(),
+                       [](const std::unique_ptr<Entity> &e)
+                       {
+                           return e->isDead();
+                       }),
+        entities.end());
+
+    // 3. SPAWN COM DELAY
+    // Se há espaço para mais entidades...
+    if (entities.size() < MAX_ENTITIES)
+    {
+        spawnTimer += dt; // Conta o tempo
+
+        // Só cria se o tempo passou do delay estipulado
+        if (spawnTimer >= nextSpawnDelay)
+        {
+            spawnEntity();
+            
+            spawnTimer = 0.f; // Reseta timer
+            // Define o próximo delay aleatório (ex: entre 0.5s e 1.5s)
+            nextSpawnDelay = randomFloat(0.5f, 2.f); 
+        }
+    }
 }
 
 void Game::render()
 {
     window.clear();
-
     for (auto &e : entities)
         e->render(window);
-
     window.display();
 }
 
 void Game::spawnEntity()
 {
     sf::Vector2u size = window.getSize();
-
-    float x = randomFloat(0.f, size.x - 50.f);
-    float y = size.y - 50.f; // nasce perto do chão
-
-    sf::Vector2f startPos(x, y);
-
-    entities.push_back(
-        std::make_unique<AimEntity>(startPos, size));
+    float x = randomFloat(50.f, size.x - 50.f);
+    // Y é tratado no AimEntity, mas passamos size para referência
+    
+    sf::Vector2f startPos(x, (float)size.y);
+    entities.push_back(std::make_unique<AimEntity>(startPos, size));
 }

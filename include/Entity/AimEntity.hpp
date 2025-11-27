@@ -1,6 +1,6 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include "Entity.hpp"
+#include <SFML/Graphics.hpp>
 
 class AimEntity : public Entity
 {
@@ -12,18 +12,18 @@ private:
     sf::Vector2f P1; // pico (control point)
     sf::Vector2f P2; // ponto final
 
-    float t;     // parâmetro da curva, vai de 0 a 1
-    float speed; // controla a velocidade
+    float t;     // parâmetro da curva (0 a 1)
+    float speed; // velocidade do incremento de t
+    bool dead;   // flag para saber se chegou ao fim
 
 public:
-    // Construtor recebe posição inicial e tamanho da tela
     AimEntity(sf::Vector2f startPos, sf::Vector2u screenSize);
 
-    // Implementações obrigatórias da classe Entity
     void update(float dt) override;
     void draw(sf::RenderWindow &window) const override;
     void render(sf::RenderWindow &window) override;
 
     bool isClicked(const sf::Vector2f &mousePos) const override;
     sf::FloatRect getBounds() const override;
+    bool isDead() const override;
 };
