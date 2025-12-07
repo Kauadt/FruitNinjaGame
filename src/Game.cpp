@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <random>
 
+using namespace sf;
+
 static float randomFloat(float min, float max)
 {
     static std::random_device rd;
@@ -16,13 +18,21 @@ Game::Game()
     : window(sf::VideoMode(900, 550), "Game", sf::Style::Close | sf::Style::Titlebar)
 {
     window.setFramerateLimit(60);
+     
 
     spawnTimer = 0.f;
     nextSpawnDelay = 0.5f; // Delay inicial curto
-
+    isMouseMovedPressed = false;
+    isMouseMoving = false;
     // Inicializa com algumas entidades ou deixe vazio para o timer preencher
-    for (int i = 0; i < MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_AIMENTITIES; i++){
         spawnEntity();
+    };
+
+    sliceEntity();
+
+    
+
 }
 
 void Game::run()
@@ -37,6 +47,8 @@ void Game::run()
 
 void Game::processEvents()
 {
+
+
     sf::Event event;
     while (window.pollEvent(event))
     {
@@ -51,12 +63,28 @@ void Game::processEvents()
             // Remove se clicar
             entities.erase(
                 std::remove_if(entities.begin(), entities.end(),
-                               [&](const std::unique_ptr<Entity> &e)
+                               [&](const std::unique_ptr<AimEntity> &e)
                                {
                                    return e->isClicked(clickPos);
                                }),
                 entities.end());
         }
+
+        if(event.type == Event::MouseMoved && Mouse::isButtonPressed(Mouse::Left)){
+            isMouseMovedPressed = true;
+        }
+        if(!(event.type == Event::MouseMoved && Mouse::isButtonPressed(Mouse::Left))){
+            isMouseMovedPressed = false;
+        }
+
+        if(isMouseMovedPressed && clkSliceSp.getElapsedTime().asSeconds() >= 0.005 && sliceEntities.size() <= 50){
+            
+            sliceEntity();
+    
+            clkSliceSp.restart();
+        }
+
+        
     }
 }
 
@@ -64,6 +92,29 @@ void Game::update()
 {
     static sf::Clock clock;
     float dt = clock.restart().asSeconds();
+
+    if(clkSliceDlt.getElapsedTime().asSeconds() >= 0.001 && isMouseMovedPressed == false  && sliceEntities.size() > 1){
+        sliceEntities.pop_back();
+        clkSliceDlt.restart();
+    }
+
+    for(auto &s : sliceEntities){
+
+        if(s == sliceEntities.front()){
+            for(auto &e : entities){
+            e.get()->setDead(s.get()->getPosition());
+            }
+        }
+        entities.erase(
+                std::remove_if(entities.begin(), entities.end(),
+                               [&](const std::unique_ptr<AimEntity> &e)
+                               {
+                                   return e->isDead();
+                               }),
+                entities.end());
+
+        
+    }
 
     // 1. Atualiza Posição
     for (auto &e : entities)
@@ -74,7 +125,7 @@ void Game::update()
     // 2. Remove entidades mortas (que completaram o trajeto)
     entities.erase(
         std::remove_if(entities.begin(), entities.end(),
-                       [](const std::unique_ptr<Entity> &e)
+                       [](const std::unique_ptr<AimEntity> &e)
                        {
                            return e->isDead();
                        }),
@@ -82,7 +133,7 @@ void Game::update()
 
     // 3. SPAWN COM DELAY
     // Se há espaço para mais entidades...
-    if (entities.size() < MAX_ENTITIES)
+    if (entities.size() < MAX_AIMENTITIES)
     {
         spawnTimer += dt; // Conta o tempo
 
@@ -96,6 +147,53 @@ void Game::update()
             nextSpawnDelay = randomFloat(0.5f, 2.f); 
         }
     }
+
+    if (isMouseMovedPressed){
+
+                
+        Vector2i originpixel = Mouse::getPosition(window);
+        Vector2f mousepos = window.mapPixelToCoords(originpixel);
+
+        float maxDistance = sliceEntities.empty() ? 20.f : sliceEntities[0]->getRad() * 2.f;
+
+        for(size_t i = 0; i < sliceEntities.size(); ++i){
+            SliceEntity* currentSlice = sliceEntities[i].get();
+
+            if (i == 0){
+                currentSlice->setPosition(mousepos);
+            }
+            else{
+            
+                SliceEntity* prevSlice = sliceEntities[i-1].get();
+
+                Vector2f posAnterior = prevSlice->getPosition();
+                Vector2f posAtual = currentSlice->getPosition();
+                
+                float dx = posAtual.x - posAnterior.x;
+                float dy = posAtual.y - posAnterior.y;
+
+                float dist = std::sqrt(dx*dx + dy*dy); 
+
+                
+                if (dist > maxDistance){
+                
+                    dx /= dist;
+                    dy /= dist;
+
+            
+                    float novoX = posAnterior.x + dx * maxDistance;
+                    float novoY = posAnterior.y + dy * maxDistance;
+                    
+                    currentSlice->setPosition(novoX, novoY);
+                }
+                
+            }
+        }
+            
+    }
+
+    
+   
 }
 
 void Game::render()
@@ -103,6 +201,10 @@ void Game::render()
     window.clear();
     for (auto &e : entities)
         e->render(window);
+
+    for (auto &s:sliceEntities)
+        s->render(window);
+
     window.display();
 }
 
@@ -114,4 +216,10 @@ void Game::spawnEntity()
     
     sf::Vector2f startPos(x, (float)size.y);
     entities.push_back(std::make_unique<AimEntity>(startPos, size));
+}
+
+
+
+void Game::sliceEntity(){
+    sliceEntities.push_back(make_unique<SliceEntity>());
 }
