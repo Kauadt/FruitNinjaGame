@@ -4,9 +4,7 @@
 #include <algorithm>
 #include <random>
 
-
 using namespace sf;
-
 
 static float randomFloat(float min, float max)
 {
@@ -27,7 +25,6 @@ Game::Game()
     isMouseMovedPressed = false;
     isMouseMoving = false;
     // Inicializa com algumas entidades ou deixe vazio para o timer preencher
-
     for (int i = 0; i < MAX_AIMENTITIES; i++){
         spawnEntity();
     };
@@ -128,9 +125,7 @@ void Game::update()
     // 2. Remove entidades mortas (que completaram o trajeto)
     entities.erase(
         std::remove_if(entities.begin(), entities.end(),
-
                        [](const std::unique_ptr<AimEntity> &e)
-
                        {
                            return e->isDead();
                        }),
@@ -138,9 +133,7 @@ void Game::update()
 
     // 3. SPAWN COM DELAY
     // Se há espaço para mais entidades...
-
     if (entities.size() < MAX_AIMENTITIES)
-
     {
         spawnTimer += dt; // Conta o tempo
 
@@ -201,7 +194,6 @@ void Game::update()
 
     
    
-
 }
 
 void Game::render()
@@ -210,10 +202,8 @@ void Game::render()
     for (auto &e : entities)
         e->render(window);
 
-
     for (auto &s:sliceEntities)
         s->render(window);
-
 
     window.display();
 }
@@ -226,12 +216,10 @@ void Game::spawnEntity()
     
     sf::Vector2f startPos(x, (float)size.y);
     entities.push_back(std::make_unique<AimEntity>(startPos, size));
-
 }
 
 
 
 void Game::sliceEntity(){
     sliceEntities.push_back(make_unique<SliceEntity>());
-
 }

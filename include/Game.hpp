@@ -2,12 +2,11 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
-
 #include "Entity/AimEntity.hpp"
 #include "Entity/SliceEntity.hpp"
 
 using namespace std;
-
+using namespace sf;
 
 #define MAX_AIMENTITIES 5 
 
@@ -16,7 +15,6 @@ using namespace std;
 class Game
 {
 private:
-
     RenderWindow window;
     vector<unique_ptr<AimEntity>> entities;
     vector<unique_ptr<SliceEntity>> sliceEntities;
@@ -35,7 +33,6 @@ private:
     void render();
     void spawnEntity();
     void sliceEntity();
-
 
 public:
     Game();
