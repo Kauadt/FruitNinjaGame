@@ -2,31 +2,28 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
-#include "Entity/AimEntity.hpp"
+
+#include "Entity/FruitEntity.hpp"
+#include "Entity/BombEntity.hpp"
 #include "Entity/SliceEntity.hpp"
 
-using namespace std;
-using namespace sf;
-
-#define MAX_AIMENTITIES 5 
-
+#define MAX_ENTITIES 5
 #define MAX_SLICEENTITIES 50
 
 class Game
 {
 private:
-    RenderWindow window;
-    vector<unique_ptr<AimEntity>> entities;
-    vector<unique_ptr<SliceEntity>> sliceEntities;
-    Clock clkSliceSp;
-    Clock clkSliceDlt;
+    sf::RenderWindow window;
 
+    std::vector<std::unique_ptr<AimEntity>> entities;
+    std::vector<std::unique_ptr<SliceEntity>> sliceEntities;
 
-    // Variáveis para controle de spawn com delay
+    sf::Clock clkSliceSp;
+    sf::Clock clkSliceDlt;
+
     float spawnTimer;
     float nextSpawnDelay;
     bool isMouseMovedPressed;
-    bool isMouseMoving;
 
     void processEvents();
     void update();
